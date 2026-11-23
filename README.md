@@ -11,7 +11,6 @@ This repository evaluates the wave-making resistance of a modified DTMB 5415 mod
 - [How it works](#how-it-works)
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
-- [Hull workflows](#hull-workflows)
 - [Inputs](#inputs)
 - [Outputs](#outputs)
 - [Results](#results)
@@ -120,8 +119,6 @@ A plain comma-separated file with no text header, in metres, holding **half-brea
 - **Rows 1…:** the first column is the longitudinal position `x`, followed by the half-breadth at each depth.
 - `x` and depth must be strictly increasing, and there must be no blank cells.
 
-The script stops with a clear error if any of these are violated, or if the deepest depth differs from `DRAFT_ORCA` by more than 1% (usually a sign of the wrong file or wrong units).
-
 ## Pre `run_5415.py'
 Before running `run_5415.py` make sure to have the following installed:
 - `numpy`
@@ -137,33 +134,33 @@ All scripts should be run from the same folder, because they import and read eac
 |---|---|---|
 | `OFFSETS_FILE` | `"offsets.csv"` | Offsets file described above. |
 | `DRAFT_ORCA` | `0.2477` | Draft in metres. Must equal the last depth in `offsets.csv`. |
-| `S_ORCA` | `4.573` | Wetted surface area from Orca at that draft (m²). Used to non-dimensionalise `Rw`. |
-| `LWL_ORCA` | `5.7271` | Waterline length from Orca (m). `None` uses the x-range of `offsets.csv`. Sets the speed through `U = Fn·√(gL)`. The geometry grid always spans the x-range of `offsets.csv`, so the two lengths should agree to a fraction of a percent. |
+| `S_ORCA` | `4.573` | Wetted surface area from Orca at that draft (m²). |
+| `LWL_ORCA` | `5.7271` | Waterline length from Orca (m). |
 | `RHO` | `998.0` | Water density (kg/m³). Freshwater tank: about 998. Seawater: about 1025. |
-| `NU` | `1.004e-6` | Kinematic viscosity (m²/s), used for the friction line. |
-| `G` | `9.81` | Gravity (m/s²). Also written into the solver. |
+| `NU` | `1.004e-6` | Kinematic viscosity (m²/s). |
+| `G` | `9.81` | Gravity (m/s²). |
 | `K_FORM` | `0.15` | Form factor `k` in `Ct = (1+k)·CF + Cw`. |
-| `FN_START, FN_STOP, FN_STEP` | `0.05, 0.45, 0.01` | Froude number sweep (41 speeds). |
-| `NX` | `301` | Longitudinal grid points. **Must be odd** (Filon rule). |
+| `FN_START, FN_STOP, FN_STEP` | `0.05, 0.45, 0.01` | Froude number sweep. |
+| `NX` | `301` | Longitudinal grid points. **Must be odd**. |
 | `NZ` | `51` | Vertical grid points. |
 | `N_ANGLES` | `400` | Wave propagation angles for the `θ` integral. |
-| `RESULTS_FILE, META_FILE` | `results.csv`, `results_meta.json` | Output names. |
+| `RESULTS_FILE, META_FILE` | `results.csv`, `results_meta.json`.|
 
 ### Settings in `compare_cw.py`
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `EXP_FILE` | `"olivieri_ct.csv"` | Main tank data (columns `Fr, CTM, Re, CF`). |
-| `OFFSETS_FILE`, `RESULTS_FILE`, `META_FILE` | as in `run_5415.py` | Must match the run you want to compare. |
+| `EXP_FILE` | `"olivieri_ct.csv"` | Tank data (columns `Fr, CTM, Re, CF`). |
+| `OFFSETS_FILE`, `RESULTS_FILE`, `META_FILE` | all pertaining to `run_5415.py` | Must match the run you want to compare.|
 | `OUT_PNG`, `OUT_CSV` | `cw_comparison.png`, `cw_comparison.csv` | Output names. |
-| `K_EXP` | `0.15` | Form factor used to strip friction from the tank data. `None` estimates it with a Prohaska fit. **The same `k` is applied to every extra file below.** |
+| `K_EXP` | `0.15` | Form factor used to strip friction from the tank data. `None` estimates it with a Prohaska fit. |
 | `PROHASKA_FR` | `(0.15, 0.20)` | Froude range for the Prohaska fit. |
 | `REF_L, REF_B, REF_T` | `5.72, 0.76, 0.248` | Reference 5415 model dimensions. Only used to warn if your hull is a different shape. |
-| `OTHER_EXP_FILES` | `["ahmed_2023_exp.csv"]` | Extra tank data, same `Fr, CTM, Re, CF` layout. |
-| `CFD_FILES` | `["ahmed_2023_cfd.csv"]` | CFD results, same layout. |
+| `OTHER_EXP_FILES` | `["ahmed_2023_exp.csv"]` | More Tank data, same `Fr, CTM, Re, CF` layout. |
+| `CFD_FILES` | `["ahmed_2023_cfd.csv"]` | CFD results (columns `Fr, CTM, Re, CF`). |
 | `FR_MIN_OTHER` | `0.10` | Points below this Froude number are ignored in the two lists above. `None` keeps all points. |
 
-With both lists empty, `compare_cw.py` compares against `olivieri_ct.csv` only. A file that is missing or unreadable is skipped with a message rather than stopping the run.
+With both lists empty, `compare_cw.py` compares against `olivieri_ct.csv` only.
 
 ### Reference-data files
 
