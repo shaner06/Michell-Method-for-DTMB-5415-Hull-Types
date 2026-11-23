@@ -224,11 +224,11 @@ Two panels: wave resistance coefficient `Cw` on the left and total resistance co
  
 ![Cw and Ct comparison](cw_comparison.png)
  
-*Left: wave resistance coefficient `Cw`. Right: total resistance coefficient `Ct`. Black: INSEAN 2340 tank data (Olivieri et al.). Blue and red: Michell prediction. Green and orange: Ahmed (2023) experiment and CFD.*
- 
+*Left: wave resistance coefficient `Cw`. Right: total resistance coefficient `Ct`. 
+
 ### Data excerpt (`cw_comparison.csv`)
  
-A few rows from the output file, rounded to four significant figures. `nan` means the point lies outside that data file's Froude range, so nothing is extrapolated. The Ahmed values at Fn 0.20 and 0.30 are interpolated between that file's measured speeds.
+A few rows from the output file, rounded to four significant figures. `nan` means the point lies outside that data file's Froude range, so nothing is extrapolated. 
  
 | Fn | Cw_Michell | Cw_exp | Ct_Michell | Cw_ahmed_2023_exp | Ct_ahmed_2023_exp | Cw_ahmed_2023_cfd | Ct_ahmed_2023_cfd |
 |---|---|---|---|---|---|---|---|
@@ -238,31 +238,19 @@ A few rows from the output file, rounded to four significant figures. `nan` mean
 | 0.40 | 5.384e-03 | 3.184e-03 | 8.535e-03 | nan | nan | nan | nan |
 | 0.45 | 7.158e-03 | 4.737e-03 | 1.025e-02 | nan | nan | nan | nan |
  
-### Analysis
  
-**Wave resistance against the INSEAN tank data**
+**Wave resistance against the tow tank data**
  
-| Speed range | Michell `Cw` / tank `Cw` | What happens |
-|---|---|---|
-| Fn 0.35 to 0.45 | 1.5 to 1.8 | Michell follows the steep rise in wave resistance but sits consistently high. |
-| Fn 0.16 to 0.30 | 2.4 to 4.2 | The tank `Cw` rises smoothly from about 4e-04 to 1.1e-03, while Michell stays between about 1.2e-03 and 2.8e-03. |
-| Fn below 0.15 | not meaningful | The tank `Cw` is close to zero (slightly negative at Fn 0.08 to 0.11), so any ratio explodes or is undefined. |
- 
-- **Humps and hollows.** The Michell curve is rippled. It has local maxima at Fn 0.12, 0.14, 0.18, 0.20, 0.23 and 0.29 and minima at Fn 0.13, 0.17, 0.19, 0.21, 0.25 and 0.33. The largest hump is at Fn 0.29 (2.83e-03), followed by a hollow at Fn 0.33 (1.97e-03) before the curve climbs to 7.2e-03 at Fn 0.45. The tank curve shows only a gentle shoulder around Fn 0.28 to 0.30. Ripples like these come from interference between the bow and stern wave systems. Thin-ship theory has no viscous damping or wave breaking, so it typically exaggerates them.
-- **Low speed.** At Fn 0.10 Michell gives a `Cw` of 1.7e-03, about 30% of its own `Ct`, while the tank data imply essentially no wave resistance. The tank `Cw` is obtained by subtraction (`CTM − (1+k)·CF`), so it is sensitive to the chosen `k` at these speeds. Even allowing for that, a wave-resistance share of about 30% looks too high for this speed.
+- **Humps and hollows.**  Thin-ship theory has no viscous damping or wave breaking, so it typically exaggerates the humps and hollows.
+- **Low speed.** At Fn 0.10 Michell gives a `Cw` of 1.7e-03, while the tow tank data implies no wave resistance. The tow tank `Cw` is obtained by subtraction so it is sensitive to  `k` at these froude numbers.
+- 
 **Total resistance**
  
-- Michell `Ct` is 12% to 41% above the tank `CTM` for Fn 0.20 to 0.45 (mean about 29%). The two agree closely only at the lowest speeds (ratio 1.03 at Fn 0.05), where friction dominates.
-- Both curves use the same friction treatment (ITTC-1957 line and `k = 0.15`), so the gap in `Ct` is essentially the gap in `Cw`.
-**Ahmed (2023) experiment and CFD**
- 
-- The Ahmed experiment and CFD agree with each other to within about 20% at every speed. That is a much smaller spread than the gap between either of them and the Michell result.
-- From Fn 0.19 to 0.39 the Michell `Cw` lies within about a factor of 2 of both Ahmed curves (ratios of 0.67, 1.46, 1.98, 1.08 and 1.84 against the experiment at Fn 0.19, 0.24, 0.29, 0.34 and 0.39).
-- The Ahmed `Cw` is itself higher than the INSEAN tank `Cw` (roughly 1.3 to 4 times higher between Fn 0.19 and 0.34). The two reference sets therefore disagree, and Michell looks closer to Ahmed partly because the Ahmed values are higher. The Ahmed files have lower Reynolds numbers at the same Froude number (a different scale), and the same `k = 0.15` is applied to both sets, so scale effects are a likely contributor.
-- The Ahmed points at Fn 0.10 and 0.15 (`Ct` of 1.8e-02 and 1.0e-02, against about 4e-03 for the INSEAN model) are not credible and stretch the vertical axis of the plot. Raising `FR_MIN_OTHER` (for example to `0.19`) removes them and rescales the figure.
-**Summary.** The Michell integral reproduces the trend of wave resistance rising with Froude number and gives the right order of magnitude. It over-predicts `Cw` by about 1.5 times at high speed and by 2 to 4 times at moderate speed, and it cannot reproduce the smooth tank curve. This makes it better suited to ranking hull variants against each other than to predicting absolute resistance.
+- Michell `Ct` is 12% to 41% above the tow tank `CTM` for Fn 0.20 to 0.45. The two agree closely only at the lowest speeds.
+- Both curves use the same `k = 0.15`, so the gap in `Ct` is essentially the gap in `Cw`.
 
-
+  
+**Summary.** The Michell integral reproduces wave resistance rising with Froude number. It over-predicts `Cw` by about 1.5 times at high speed and by 2 to 4 times at moderate speed. Leaving room for improvement in terms of accuracy.
 
 
 ## Notes and limitations
@@ -275,4 +263,9 @@ A few rows from the output file, rounded to four significant figures. `nan` mean
 
 ## Credits
 
-
+- **A. Olivieri, F. Pistani, A. Avanzini, F. Stern and R. Penna (2001).** *Towing Tank Experiments of Resistance, Sinkage and Trim, Boundary Layer, Wake, and Free Surface Flow Around a Naval Combatant INSEAN 2340 Model.* IIHR Technical Report No. 421, IIHR – Hydroscience & Engineering, The University of Iowa. Source of the tank data in `olivieri_ct.csv`. The INSEAN 2340 model is a 5.72 m (1/24.8 scale) geosym of the DTMB 5415.
+- **Noah Bagazinski.** Author of `HullParameterization.py` and of the Python translation of the Michell solver in `ModifiedMichellCw.py` (November 2022).
+  - The solver is a translation of the MATLAB sample code from Douglas Read, *A Drag Estimate for Concept Stage Ship Design Optimization*, PhD defense, University of Maine, 2009 ([full text](https://digitalcommons.library.umaine.edu/cgi/viewcontent.cgi?referer=&httpsredir=1&article=1509&context=etd)).
+  - The bulb forms in `HullParameterization.py` are adapted from Chrismianto, D. and Kim, D.J. (2014), *Parametric bulbous bow design using the cubic Bezier curve and curve-plane intersection method for the minimization of ship resistance in CFD*, Journal of Marine Science and Technology, 19(4), 479–492.
+- **A. M. Elhadad and A. M. Abo El-Ela (2023)**, referred to as "Ahmed (2023)" in this repository. *Experimental and CFD Resistance Validation of Naval Combatant DTMB 5415-51 Model.* Journal of Advanced Research in Fluid Mechanics and Thermal Sciences, 107(2), 84–102. [doi:10.37934/arfmts.107.2.84102](https://doi.org/10.37934/arfmts.107.2.84102). Source of the experimental and CFD resistance data in `ahmed_2023_exp.csv` and `ahmed_2023_cfd.csv`.
+ 
