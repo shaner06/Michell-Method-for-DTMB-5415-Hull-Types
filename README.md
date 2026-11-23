@@ -10,7 +10,6 @@ This repository evaluates the wave-making resistance of a modified DTMB 5415 mod
 
 - [How it works](#how-it-works)
 - [Repository layout](#repository-layout)
-- [Requirements](#requirements)
 - [Quick start](#quick-start)
 - [Hull workflows](#hull-workflows)
 - [Inputs](#inputs)
@@ -57,25 +56,13 @@ flowchart TD
     OTHER --> CMP
     CMP --> OUT["cw_comparison.png<br/>cw_comparison.csv"]
 ```
-
-### Step by step
-
-| # | Step | You provide | You get |
-|---|---|---|---|
-| 1 | **Build the hull** (CAD route or parametric route) | A closed hull | An STL file |
-| 2 | **Load it into Orca** at the design draft | The STL | `offsets.csv`, plus three numbers: **draft**, **wetted surface area**, **waterline length** |
-| 3 | **Run the solver:** `run_5415.py` | `offsets.csv` and the three Orca numbers typed into the SETTINGS block | `results.csv`, `results_meta.json` |
-| 4 | **Compare:** `compare_cw.py` | The results from step 3 and the reference-data files | `cw_comparison.png`, `cw_comparison.csv` |
-
-What each step does:
-
 1. **Build the hull** by one of two routes:
-   - **CAD route:** model the hull in CAD and export a closed hull. This repo includes `5415_closed_hull.stl`, made from `5415.igs`.
-   - **Parametric route:** set the 45-element parameter vector in `make_hull.py` and run it. `HullParameterization.py` writes a closed STL (`my_hull.stl`).
-2. **Load the hull into Orca**, whichever route made it. At the design draft, read off the draft, wetted surface area and waterline length, and export the half-breadth table as `offsets.csv`.
-3. **Run the solver.** For each Froude number, `run_5415.py` calls `ModMichell()`, which evaluates the Michell wave-resistance integral (Filon quadrature in `z` and `x`, then a trapezoidal integral over the wave propagation angle `θ`). The resulting wave resistance `Rw` is converted to `Cw = Rw / (½ρU²S)`, and a total coefficient `Ct = (1+k)·CF + Cw` is built from the ITTC-1957 friction line and a form factor `k`.
-4. **Compare with reference data.** `compare_cw.py` removes friction from the tank data to get an experimental `Cw = CTM − (1+k)·CF`, interpolates it to the same Froude numbers, and tabulates and plots it against the Michell prediction. Other tank and CFD files listed in its SETTINGS block are added to the same tables and plots.
-
+   - **CAD route:** model the hull in CAD and export a closed hull. 
+   - **Parametric route:** set the 45-element parameter vector in `make_hull.py` and run it. `HullParameterization.py` creates a closed hull as an STL (`my_hull.stl`).
+2. **Load the hull into Orca** At the design draft, read off the draft, wetted surface area and waterline length, and export the half-breadth table as `offsets.csv`.
+3. **Run the solver.** For each Froude number, `run_5415.py` calls `ModifiedMichell.py`, which evaluates the Michell wave-resistance integral.
+4. **Compare with reference data.** `compare_cw.py` plots and tabulates the Michell wave-resistance predictions (computed by `ModifiedMichellCw.py` and saved in `results.csv`) against three reference data sets: the Olivieri tow tank experiments, and the Ahmed (2023) tow tank and CFD results.
+   
 ### Reference data
 
 | Source | What it provides | File | Status |
@@ -86,105 +73,33 @@ What each step does:
 
 All three files share the layout `Fr, CTM, Re, CF`, so more data can be added just by listing another file (see [Settings in `compare_cw.py`](#settings-in-compare_cwpy)).
 
-Because every hull passes through Orca, the same solver and comparison scripts work for any hull. A hull whose length, beam or draft differs from the reference 5415 by more than 10% triggers a warning in `compare_cw.py`, and the plot is labelled as reference only.
-
 ---
 
 ## Repository layout
 
 | File | Purpose |
 |---|---|
-| `ModifiedMichellCw.py` | Michell solver (`ModMichell`), plus helpers `michspace`, `CalcDrag`, `Calc_Cf`, `interp_CW`. Python port of Douglas Read's MATLAB code. |
-| `run_5415.py` | Main run script. Reads `offsets.csv`, sweeps Froude number, writes `results.csv` and `results_meta.json`. |
-| `compare_cw.py` | Compares the Michell prediction with tank and CFD data. Writes `cw_comparison.png` and `cw_comparison.csv`. |
-| `HullParameterization.py` | Parametric hull generator (`Hull_Parameterization` class), 45 input parameters. Used by the parametric route only. |
-| `make_hull.py` | Example driver for `HullParameterization.py`. Writes an STL. |
-| `5415_closed_hull.stl` | Closed binary STL of the DTMB 5415 hull made in CAD (from `5415.igs`). |
+| `ModifiedMichellCw.py` | Michell solver (`ModMichell`). |
+| `run_5415.py` | Main run script. Reads `offsets.csv`, writes `results.csv` and `results_meta.json`. |
+| `compare_cw.py` | Compares the Michell prediction with tow tank and CFD data. Writes `cw_comparison.png` and `cw_comparison.csv`. |
+| `HullParameterization.py` | Parametric hull generator, 45 input parameters.|
+| `make_hull.py` | Input script for `HullParameterization.py`. Creates a closed STL. |
 | `olivieri_ct.csv` | Tank data for the 5415 model: `Fr, CTM, Re, CF`. |
-| `ahmed_2023_exp.csv`, `ahmed_2023_cfd.csv` | Additional experimental and CFD data, same layout. |
+| `ahmed_2023_exp.csv`, `ahmed_2023_cfd.csv` | Additional experimental and CFD data |
 | `offsets.csv` | Half-breadth offsets exported from Orca (format [below](#offsetscsv)). |
-| `results.csv`, `results_meta.json` | Solver output, committed for the example hull. |
-| `cw_comparison.csv`, `cw_comparison.png` | Comparison output, committed for the example hull. |
-
----
-
-## Requirements
-
-- Python 3 (tested with numpy 2.5, scipy 1.18, matplotlib 3.11)
-- `numpy`
-- `scipy` (used by `run_5415.py` for `RegularGridInterpolator`)
-- `matplotlib` (used by `compare_cw.py`)
-- `numpy-stl` (only for `HullParameterization.py` / `make_hull.py`)
-
-```bash
-pip install numpy scipy matplotlib numpy-stl
-```
-
-All scripts must be run from the same folder, because they import and read each other by filename.
+| `results.csv`, `results_meta.json` | Solver results |
+| `cw_comparison.csv`, `cw_comparison.png` | Comparison results|
 
 ---
 
 ## Quick start
 
-1. Put `offsets.csv` and the reference files (`olivieri_ct.csv`, and optionally the `ahmed_2023_*.csv` files) in the same folder as the scripts.
+1. Put `offsets.csv`  in the same folder as `ModifiedMichell.py`.
 2. Open `run_5415.py` and edit the **SETTINGS** block at the top. At minimum, set `DRAFT_ORCA`, `S_ORCA` and `LWL_ORCA` from Orca (see [Inputs](#settings-in-run_5415py)).
-3. Run the solver:
+3. Run the solver it prints the hull length, draft, beam, volume and block coefficient, then a table in the shell window as it sweeps the speeds, and writes `results.csv` and `results_meta.json`. **Check the printed `Cb` against Orca's block coefficient** before trusting the results.
+4. Compare with the reference data, `olivieri_ct`, ` ahmed_2023_exp` , and `ahmed_2023_cfd`, this prints comparison tables, writes `cw_comparison.png` and `cw_comparison.csv`, and opens the plot.
 
-   ```bash
-   python run_5415.py
-   ```
-
-   It prints the hull length, draft, beam, volume and block coefficient, then a table as it sweeps the speeds, and writes `results.csv` and `results_meta.json`. **Check the printed `Cb` against Orca's block coefficient** before trusting the results.
-4. Compare with the reference data:
-
-   ```bash
-   python compare_cw.py
-   ```
-
-   This prints comparison tables, writes `cw_comparison.png` and `cw_comparison.csv`, and opens the plot.
-
-**Run time.** The solver uses pure-Python loops over `NX × NZ × N_ANGLES` for every speed. With the default grid (301 × 51 × 400), one Froude number took about 4 s in a test run, so the default 41-speed sweep takes a few minutes (your machine will differ). For a quick test, lower `NX`, `NZ`, `N_ANGLES` and widen `FN_STEP`.
-
----
-
-## Hull workflows
-
-### A. CAD hull + Orca offsets (used for the final results)
-
-1. Model the hull in CAD and export the closed hull (this repo includes `5415_closed_hull.stl`, built from `5415.igs`).
-2. Load the hull in Orca and read off three numbers at the design draft: **draft**, **wetted surface area** and **waterline length**.
-3. Export the half-breadth offset table from Orca as `offsets.csv`.
-4. Continue with the [quick start](#quick-start).
-
-### B. Parametric hull (original approach)
-
-`HullParameterization.py` generates a hull from a 45-element parameter vector, grouped into five blocks: general hull form, parallel mid-body cross section, bow form, stern form, and bulb forms (bow and stern bulbs follow Chrismianto and Kim, 2014).
-
-`make_hull.py` shows how to use it:
-
-```python
-import numpy as np
-from HullParameterization import Hull_Parameterization as HP
-
-v = np.array([...], dtype=np.float64)   # 45 numbers
-print(len(v))                           # must print 45
-
-Hull = HP(v)
-mesh = Hull.gen_stl(NUM_WL=100, PointsPerWL=800,
-                    bit_AddTransom=1, bit_AddDeckLid=1,
-                    namepath='./my_hull')   # writes my_hull.stl
-```
-
-Useful methods on the `Hull_Parameterization` object:
-
-| Method | Returns |
-|---|---|
-| `gen_stl(NUM_WL, PointsPerWL, bit_AddTransom, bit_AddDeckLid, bit_RefineBowAndStern, namepath)` | Writes `<namepath>.stl` and returns the mesh. |
-| `gen_PC_for_Cw(draft, NUM_WL, PointsPerWL)` | `X, Z, Y, WL`: the point grid in the form `ModMichell` expects (`Y` indexed `[x, z]`). |
-| `Calc_VolumeProperties()` | Fills in waterplane area, volume, centres of buoyancy/flotation, second moments, wetted surface and waterline length for a range of drafts. |
-| `input_Constraints()` | Constraint values for the 45 parameters, for checking that a design is geometrically valid. |
-
-The parametric hull was not accurate enough to reproduce the 5415, which is why workflow A was adopted. The code is kept here because it works and is reusable for other hulls. Either route ends in an STL that goes through Orca, so everything downstream is identical.
+**Run time.** The solver uses pure-Python loops over `NX × NZ × N_ANGLES` for every speed. With the default grid (301 × 51 × 400), which takes a few minutes to run. For a quick test, lower `NX`, `NZ`, `N_ANGLES` and increase the `FN_STEP` value.
 
 ---
 
@@ -206,6 +121,15 @@ A plain comma-separated file with no text header, in metres, holding **half-brea
 - `x` and depth must be strictly increasing, and there must be no blank cells.
 
 The script stops with a clear error if any of these are violated, or if the deepest depth differs from `DRAFT_ORCA` by more than 1% (usually a sign of the wrong file or wrong units).
+
+## Pre `run_5415.py'
+Before running `run_5415.py` make sure to have the following installed:
+- `numpy`
+- `scipy` (used by `run_5415.py` for `RegularGridInterpolator`)
+- `matplotlib` (used by `compare_cw.py`)
+- `numpy-stl` (only for `HullParameterization.py` / `make_hull.py`)
+
+All scripts should be run from the same folder, because they import and read each other by filename.
 
 ### Settings in `run_5415.py`
 
