@@ -189,7 +189,7 @@ One row per Froude number.
 
 ### `results_meta.json`
 
-Hull properties saved so the comparison script does not need them typed in again. This is the file committed for the example hull:
+Hull properties are saved so the comparison script does not need them to be typed in again. This is an example hull:
 
 ```json
 {
@@ -203,69 +203,38 @@ Hull properties saved so the comparison script does not need them typed in again
 }
 ```
 
-`hull_id` is a hash of `offsets.csv`. `compare_cw.py` refuses to run if `offsets.csv` has changed since the results were produced (`STALE: offsets.csv changed...`), so results and hull cannot silently get out of sync. `L` is the length actually used to set the speeds, so it should equal `LWL_ORCA` (or the x-range of `offsets.csv` if that is `None`).
+`hull_id` refuses to run if `offsets.csv` has changed since the results were produced, so results and hulls cannot get mixed up.
 
 ### `cw_comparison.csv` (from `compare_cw.py`)
 
 | Column | Meaning |
 |---|---|
-| `Fn` | Froude number (the solver's sweep) |
+| `Fn` | Froude number |
 | `Cw_Michell` | Michell wave-resistance coefficient |
-| `Cw_exp` | Experimental `Cw` = `CTM − (1+k)·CF` from `olivieri_ct.csv`, interpolated to the same Froude numbers |
+| `Cw_exp` | Experimental `Cw` = `CTM − (1+k)·CF` from `olivieri_ct.csv` |
 | `Ct_Michell` | Michell total resistance coefficient |
-| `Cw_<name>`, `Ct_<name>` | For each extra file (for example `Cw_ahmed_2023_exp`, `Ct_ahmed_2023_cfd`): the same quantities, interpolated to the solver's Froude numbers. Empty (`nan`) outside that file's Froude range. |
-
-The tables printed to the terminal are the other way round for the extra files: the dense Michell curve is interpolated onto each file's own Froude points.
+| `Cw_<name>`, `Ct_<name>` | For each extra comparison files (for example `Cw_ahmed_2023_exp`, `Ct_ahmed_2023_cfd`): the same quantities, interpolated to the solver's Fn's.|
 
 ### `cw_comparison.png`
 
-Two panels: wave resistance coefficient `Cw` on the left and total resistance coefficient `Ct` on the right, each showing the Michell prediction, the main tank curve and every extra file. If the hull dimensions differ from the reference 5415 by more than 10%, a warning is printed and the figure title notes that the tank curve is for reference only.
+Two panels: wave resistance coefficient `Cw` on the left and total resistance coefficient `Ct` on the right, each showing the Michell prediction and the experimental and CFD data. If the hull dimensions differ from the reference 5415, a warning is printed.
 
 ---
 
 ## Results
 
-Example hull: the CAD DTMB 5415 (`hull_id` 37dee2117a). L = 5.719 m, B = 0.769 m, T = 0.248 m, S = 4.573 m², block coefficient 0.49. Freshwater tank conditions (ρ = 998 kg/m³), `k = 0.15`.
 
-![Cw and Ct comparison](cw_comparison.png)
 
-Michell `Cw` against the INSEAN tank `Cw` (`CTM − (1+k)·CF`):
 
-| Fn | Cw Michell | Cw tank | Ratio |
-|---|---|---|---|
-| 0.10 | 1.68e-03 | −5.0e-06 | not defined |
-| 0.15 | 1.57e-03 | 2.13e-04 | 7.4 |
-| 0.20 | 1.70e-03 | 4.08e-04 | 4.2 |
-| 0.25 | 1.63e-03 | 6.55e-04 | 2.5 |
-| 0.30 | 2.69e-03 | 1.13e-03 | 2.4 |
-| 0.35 | 2.42e-03 | 1.62e-03 | 1.5 |
-| 0.40 | 5.38e-03 | 3.18e-03 | 1.7 |
-| 0.45 | 7.16e-03 | 4.74e-03 | 1.5 |
-
-What the comparison shows:
-
-- **Above Fn ≈ 0.33 the trend is right and the level is high.** Michell follows the steep rise in wave resistance and over-predicts the tank `Cw` by about 1.4 to 1.8 times.
-- **Between Fn 0.15 and 0.30 the over-prediction is larger (about 2.4 to 4 times)** and Michell shows humps and hollows (for example a hump near Fn 0.29) that the smooth tank curve does not.
-- **Below Fn ≈ 0.15 the ratio is not meaningful.** The tank `Cw` is close to zero (and slightly negative from Fn 0.08 to 0.11, where `k = 0.15` strips out slightly more than the measured friction), so any ratio explodes or is undefined.
-- **Total resistance:** Michell `Ct` sits above the tank `CTM` at almost every speed, with the gap widest above Fn ≈ 0.36.
-- **Ahmed (2023) data:** from Fn 0.19 to 0.39 Michell `Cw` is within a factor of about 2 of both the Ahmed experiment and the Ahmed CFD (ratios 0.67 to 1.98 against the experiment). The Ahmed `Ct` values at Fn 0.10 and 0.15 are 1.0e-02 to 1.8e-02, well above the INSEAN values of about 4e-03, and dominate the plot's vertical scale. If you want to hide them, raise `FR_MIN_OTHER` (for example to `0.19`).
-
----
 
 ## Notes and limitations
 
 - **Thin-ship theory** assumes a slender hull, so accuracy drops for full or beamy forms, and it commonly over-predicts wave resistance, which is consistent with the results above. It also ignores viscous effects, trim and sinkage, and the transom stern.
-- **Experimental `Cw` is derived, not measured.** It is `CTM − (1+k)·CF`, so it depends on the chosen form factor `k` and the friction line. It can go slightly negative at low speed.
-- **One `k` for all data.** `compare_cw.py` applies `K_EXP` to the extra experiment and CFD files as well, even though they come from a different scale.
+- **Experimental (tow tank) `Cw` is derived, not measured.** It is `CTM − (1+k)·CF`, so it depends on the chosen form factor `k` and the friction line. It can go slightly negative at low speed.
 - **Floating-point warnings.** You may see `RuntimeWarning: overflow` messages from `ModifiedMichellCw.py`. They come from the `θ = π/2` end point, where `sec θ` is enormous. The affected values are zeroed with `np.nan_to_num`.
-- **Draft must match.** Always set `DRAFT_ORCA`, `S_ORCA` and `LWL_ORCA` from the same Orca hull and draft that produced `offsets.csv`. The staleness check only hashes `offsets.csv`, so a changed setting such as `S_ORCA` or `LWL_ORCA` is not detected. Rerun `run_5415.py` after changing any setting, and compare `L` in `results_meta.json` with `LWL_ORCA`.
-
+  
 ---
 
 ## Credits
 
-- **Douglas Read**, *A Drag Estimate for Concept Stage Ship Design Optimization*, PhD defense, University of Maine, 2009. The Michell solver is a Python translation of the sample MATLAB code in this work (source dated 30 July 2008).
-- **Noah Bagazinski**: Python translation of the Michell solver (November 2022) and the parametric hull generator `HullParameterization.py`.
-- **Chrismianto, D. and Kim, D.J. (2014)**, *Parametric bulbous bow design using the cubic Bezier curve and curve-plane intersection method for the minimization of ship resistance in CFD*, Journal of Marine Science and Technology, 19(4), 479–492. Basis of the bulb forms.
-- **Olivieri, A., Pistani, F., Avanzini, A., Stern, F. and Penna, R. (2001)**, towing-tank data for the INSEAN 2340 model of the DTMB 5415 (`olivieri_ct.csv`). <!-- TODO: confirm the exact report title/number before publishing -->
-- **Ahmed (2023)**, experimental and CFD resistance data for the DTMB 5415 (`ahmed_2023_exp.csv`, `ahmed_2023_cfd.csv`). <!-- TODO: add the full citation -->
+
