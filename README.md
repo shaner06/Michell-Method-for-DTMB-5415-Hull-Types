@@ -1,6 +1,7 @@
 # Michell Thin-Ship Wave Resistance for DTMB 5415 Hull Types
 
 This repository evaluates the wave-making resistance of a modified DTMB 5415 model hull with Michell's thin-ship integral, implemented in Python. The numeric predictions are compared against towing-tank experiments and CFD results over a range of Froude numbers.
+
 ---
 
 ## Table of Contents
