@@ -11,13 +11,10 @@ The primary objective of this project is to implement Michell's thin-ship integr
 
 - [How it works](#how-it-works)
 - [Repository layout](#repository-layout)
-- [Requirements](#requirements)
-- [Hull workflows](#hull-workflows)
-- [Quick start (CAD / Orca workflow)](#quick-start-cad--orca-workflow)
+- [Quick start](#quick-start-cad)
 - [Inputs](#inputs)
 - [Outputs](#outputs)
 - [Results](#results)
-- [Using the Michell solver directly](#using-the-michell-solver-directly)
 - [Notes and limitations](#notes-and-limitations)
 - [Credits](#credits)
 
@@ -292,71 +289,17 @@ Two panels: wave resistance coefficient `Cw` (Michell vs. tank) on the left, and
 
 ## Results
 
-Results for the CAD-modelled 5415 (`cw_comparison.csv` in this repo):
 
-| Fn | Cw Michell | Cw experiment | Ratio |
-|---|---|---|---|
-| 0.05 | 2.41e-04 | 2.33e-04 | 1.04 |
-| 0.15 | 1.47e-03 | 2.13e-04 | 6.94 |
-| 0.20 | 1.55e-03 | 4.08e-04 | 3.80 |
-| 0.25 | 1.57e-03 | 6.55e-04 | 2.40 |
-| 0.30 | 2.56e-03 | 1.13e-03 | 2.27 |
-| 0.35 | 2.36e-03 | 1.62e-03 | 1.45 |
-| 0.40 | 5.29e-03 | 3.18e-03 | 1.66 |
-| 0.45 | 7.08e-03 | 4.74e-03 | 1.49 |
 
-Michell theory predicts a higher `Cw` than the experimental value across this range. The gap is largest at low Froude number, where the experimental `Cw` is very small, and narrows toward Fn ≈ 0.35–0.45. The ratio at Fn = 0.10 is not meaningful because the experimental `Cw` there is about zero (slightly negative) after friction removal.
-
-![Cw comparison](cw_comparison.png)
-
----
-
-## Using the Michell solver directly
-
-```python
-import numpy as np
-import ModifiedMichellCw as MM
-
-Rw = MM.ModMichell(Y, U, X, Z, RHO, N)
-```
-
-| Argument | Description |
-|---|---|
-| `Y` | Half-breadth offsets, shape `(Nx, Nz)`, indexed `Y[x_idx, z_idx]`. |
-| `U` | Ship speed (m/s). |
-| `X` | Longitudinal positions, uniformly spaced, starting at 0. `len(X)` must be **odd**. |
-| `Z` | Vertical positions, uniformly spaced, from 0 down to `-draft`. |
-| `RHO` | Water density (kg/m³). |
-| `N` | Number of wave angles for the `θ` integral. |
-
-Returns the wave resistance `Rw` in newtons (or `-1` and a printed message if `Nx` is even). Set `MM.g` before calling if you need a gravity other than 9.81 (`run_5415.py` does this).
-
-Other helpers in `ModifiedMichellCw.py`:
-
-- `CalcDrag(U, LOA, WL, CW, T, SA, rho)`: total drag (wave + friction) from a table of 32 precomputed `Cw` values on a 4 (draft) × 8 (Froude) grid, interpolated in Froude number and draft fraction. Returns `(R_total, Fn)`.
-- `Calc_Cf(U, WL, v)`: ITTC-1957 friction coefficient.
-- `interp_CW(Fn, T, CW)`: the bilinear interpolation used by `CalcDrag`.
-- `michspace(N)`: angle spacing from 0 to π/2, clustered toward π/2.
-
----
 
 ## Notes and limitations
 
 - **Thin-ship theory** assumes a slender hull, so accuracy drops for full or beamy forms, and it commonly over-predicts wave resistance, which is consistent with the results above. It also ignores viscous effects, trim and sinkage, and the transom stern.
 - **Floating-point warnings.** You may see `RuntimeWarning: overflow` messages from `ModifiedMichellCw.py`. They come from the `θ = π/2` end point, where `sec θ` is enormous. The affected values are zeroed with `np.nan_to_num`.
-- **Resolution.** Check that `Cw` does not change meaningfully when you raise `NX`, `NZ` and `N_ANGLES`.
 - **Draft must match.** Always set `DRAFT_ORCA`, `S_ORCA` and `LWL_ORCA` from the same Orca hull and draft that produced `offsets.csv`.
-- The docstrings at the top of `run_5415.py` and `compare_cw.py` mention older filenames (`ModMichellFast.py`, `run_5415_1.py`). The current names are `ModifiedMichellCw.py` and `run_5415.py`.
 
 ---
 
 ## Credits
 
-- Solver adapted from the MATLAB code in Douglas Read's PhD dissertation, *A Drag Estimate for Concept Stage Ship Design Optimization*, University of Maine (2009), source dated 30 July 2008. <https://digitalcommons.library.umaine.edu/cgi/viewcontent.cgi?referer=&httpsredir=1&article=1509&context=etd>
-- Python translation and hull parameterization by Noah Bagazinski (2022).
-- Bulb forms: Chrismianto, D. and Kim, D.J. (2014), *Parametric bulbous bow design using the cubic Bezier curve and curve-plane intersection method for the minimization of ship resistance in CFD*, Journal of Marine Science and Technology 19(4), 479–492.
-- Experimental data: DTMB 5415 model, INSEAN 2340 (Olivieri et al.).
 
-## License
-
-Add a license here (for example MIT).
